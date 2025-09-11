@@ -10,6 +10,11 @@
 backend/.env
 frontend/.env.local
 
+# Keep example files visible
+!.env.example
+!backend/.env.example
+!frontend/.env.local.example
+
 # =============================================================================
 # PYTHON / BACKEND
 # =============================================================================
