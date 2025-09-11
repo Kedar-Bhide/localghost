@@ -1,0 +1,10 @@
+-r base.txt
+
+# Production Optimizations
+gunicorn==21.2.0
+
+# Monitoring & Logging
+structlog==23.2.0
+
+# Performance
+redis==5.0.1

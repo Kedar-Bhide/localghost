@@ -1,0 +1,30 @@
+# Core Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database & ORM
+asyncpg>=0.30.0
+psycopg2-binary>=2.9.0
+sqlalchemy[asyncio]>=2.0.25
+alembic>=1.13.0
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Environment & Configuration
+pydantic-settings==2.1.0
+python-dotenv==1.0.0
+
+# Real-time & WebSockets
+websockets==12.0
+
+# Supabase Integration
+supabase==2.0.2
+
+# HTTP Client
+httpx>=0.24.0,<0.25.0
+
+# Utilities
+python-dateutil==2.8.2
