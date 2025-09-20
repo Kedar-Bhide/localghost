@@ -1,0 +1,633 @@
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '../../hooks/useAuth';
+import { profileApi, UserProfileResponse, LocalProfileResponse, UserProfileUpdate, LocalProfileUpdate, EXPERTISE_AREAS, COMMON_LANGUAGES, TRAVEL_STYLES } from '../../lib/profileApi';
+import toast from 'react-hot-toast';
+
+export default function ProfileEdit() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'profile' | 'local'>('profile');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfileResponse | null>(null);
+  const [localProfile, setLocalProfile] = useState<LocalProfileResponse | null>(null);
+
+  const isLocal = user?.role === 'local';
+
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    loadProfiles();
+  }, [user, router]);
+
+  const loadProfiles = async () => {
+    setLoading(true);
+    try {
+      // Load user profile
+      const userProfileData = await profileApi.getMyProfile();
+      setUserProfile(userProfileData);
+
+      // Load local profile if user is a local guide
+      if (isLocal) {
+        try {
+          const localProfileData = await profileApi.getMyLocalProfile();
+          setLocalProfile(localProfileData);
+        } catch (error: any) {
+          if (error.statusCode !== 404) {
+            console.error('Error loading local profile:', error);
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Error loading profiles:', error);
+      toast.error('Failed to load profile data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateUserProfile = async (updates: Partial<UserProfileUpdate>) => {
+    if (!userProfile) return;
+
+    setSaving(true);
+    try {
+      const updatedProfile = await profileApi.updateMyProfile(updates);
+      setUserProfile(updatedProfile);
+      toast.success('Profile updated successfully');
+    } catch (error: any) {
+      console.error('Error updating user profile:', error);
+      toast.error(error.message || 'Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateLocalProfile = async (updates: Partial<LocalProfileUpdate>) => {
+    if (!localProfile) return;
+
+    setSaving(true);
+    try {
+      const updatedProfile = await profileApi.updateMyLocalProfile(updates);
+      setLocalProfile(updatedProfile);
+      toast.success('Local guide profile updated successfully');
+    } catch (error: any) {
+      console.error('Error updating local profile:', error);
+      toast.error(error.message || 'Failed to update local profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleArrayUpdate = (
+    currentArray: string[],
+    value: string,
+    updateFunction: (updates: any) => void,
+    fieldName: string
+  ) => {
+    const newArray = currentArray.includes(value)
+      ? currentArray.filter(item => item !== value)
+      : [...currentArray, value];
+    
+    updateFunction({ [fieldName]: newArray });
+  };
+
+  const renderUserProfile = () => {
+    if (!userProfile) return null;
+
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">User Profile</h2>
+          <p className="text-gray-600">Update your basic profile information</p>
+        </div>
+
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+            <input
+              type="text"
+              value={userProfile.full_name || ''}
+              onChange={(e) => updateUserProfile({ full_name: e.target.value })}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 hover:bg-white transition-colors duration-200"
+              disabled={saving}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+            <textarea
+              value={userProfile.bio || ''}
+              onChange={(e) => updateUserProfile({ bio: e.target.value })}
+              rows={4}
+              className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 hover:bg-white transition-colors duration-200 resize-none"
+              disabled={saving}
+              maxLength={1000}
+            />
+            <p className="text-sm text-gray-500 mt-1">{(userProfile.bio || '').length}/1000</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Languages You Speak</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {COMMON_LANGUAGES.map((language) => (
+                <button
+                  key={language}
+                  type="button"
+                  onClick={() => handleArrayUpdate(
+                    userProfile.languages_spoken || [],
+                    language,
+                    updateUserProfile,
+                    'languages_spoken'
+                  )}
+                  disabled={saving}
+                  className={`px-4 py-2 rounded-lg border transition-all ${
+                    (userProfile.languages_spoken || []).includes(language)
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                  } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {language}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Travel Style</label>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {TRAVEL_STYLES.map((style) => (
+                <button
+                  key={style}
+                  type="button"
+                  onClick={() => updateUserProfile({ travel_style: style })}
+                  disabled={saving}
+                  className={`px-4 py-2 rounded-lg border transition-all ${
+                    userProfile.travel_style === style
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                  } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {style}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Interests</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {EXPERTISE_AREAS.map((interest) => (
+                <button
+                  key={interest}
+                  type="button"
+                  onClick={() => handleArrayUpdate(
+                    userProfile.interests || [],
+                    interest,
+                    updateUserProfile,
+                    'interests'
+                  )}
+                  disabled={saving}
+                  className={`px-3 py-2 rounded-lg border transition-all capitalize ${
+                    (userProfile.interests || []).includes(interest)
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-200 hover:border-blue-300 hover:bg-blue-50'
+                  } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {interest.replace('-', ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  };
+
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+          <textarea
+            value={userProfile.bio || ''}
+            onChange={(e) => updateUserProfile({ bio: e.target.value })}
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+            maxLength={1000}
+          />
+          <p className="text-sm text-gray-500 mt-1">{(userProfile.bio || '').length}/1000</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Languages You Speak</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {COMMON_LANGUAGES.map((language) => (
+              <button
+                key={language}
+                type="button"
+                onClick={() => handleArrayUpdate(
+                  userProfile.languages_spoken || [],
+                  language,
+                  updateUserProfile,
+                  'languages_spoken'
+                )}
+                className={`px-3 py-2 rounded-lg border transition-all ${
+                  (userProfile.languages_spoken || []).includes(language)
+                    ? 'bg-rose-500 text-white border-rose-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-rose-300'
+                }`}
+              >
+                {language}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Interests</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {EXPERTISE_AREAS.map((interest) => (
+              <button
+                key={interest}
+                type="button"
+                onClick={() => handleArrayUpdate(
+                  userProfile.interests || [],
+                  interest,
+                  updateUserProfile,
+                  'interests'
+                )}
+                className={`px-3 py-2 rounded-lg border transition-all capitalize ${
+                  (userProfile.interests || []).includes(interest)
+                    ? 'bg-rose-500 text-white border-rose-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-rose-300'
+                }`}
+              >
+                {interest.replace('-', ' ')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Emergency Contact</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Name</label>
+              <input
+                type="text"
+                value={userProfile.emergency_contact_name || ''}
+                onChange={(e) => updateUserProfile({ emergency_contact_name: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Contact Phone</label>
+              <input
+                type="tel"
+                value={userProfile.emergency_contact_phone || ''}
+                onChange={(e) => updateUserProfile({ emergency_contact_phone: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Privacy Settings</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Visibility</label>
+              <select
+                value={userProfile.profile_visibility}
+                onChange={(e) => updateUserProfile({ profile_visibility: e.target.value as 'public' | 'friends' | 'private' })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              >
+                <option value="public">Public</option>
+                <option value="friends">Friends Only</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            
+            <div className="flex items-center space-x-6">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={userProfile.show_age}
+                  onChange={(e) => updateUserProfile({ show_age: e.target.checked })}
+                  className="w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Show age on profile</span>
+              </label>
+              
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={userProfile.show_location}
+                  onChange={(e) => updateUserProfile({ show_location: e.target.checked })}
+                  className="w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Show location on profile</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderLocalProfile = () => {
+    if (!localProfile) {
+      return (
+        <div className="text-center py-12">
+          <div className="bg-gray-50 rounded-lg p-8">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Local Guide Profile</h3>
+            <p className="text-gray-600 mb-4">You haven't set up your local guide profile yet.</p>
+            <button
+              onClick={() => router.push('/profile/setup')}
+              className="bg-rose-500 text-white px-6 py-2 rounded-lg hover:bg-rose-600 transition-colors"
+            >
+              Create Local Profile
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-8">
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Guide Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Professional Title</label>
+              <input
+                type="text"
+                value={localProfile.title}
+                onChange={(e) => updateLocalProfile({ title: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={localProfile.is_available}
+                  onChange={(e) => updateLocalProfile({ is_available: e.target.checked })}
+                  className="w-4 h-4 text-rose-600 border-gray-300 rounded focus:ring-rose-500"
+                />
+                <span className="ml-2 text-sm text-gray-700">Currently available for bookings</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Service Description</label>
+          <textarea
+            value={localProfile.description}
+            onChange={(e) => updateLocalProfile({ description: e.target.value })}
+            rows={4}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+            maxLength={2000}
+          />
+          <p className="text-sm text-gray-500 mt-1">{localProfile.description.length}/2000</p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-3">Expertise Areas</label>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {EXPERTISE_AREAS.map((area) => (
+              <button
+                key={area}
+                type="button"
+                onClick={() => handleArrayUpdate(
+                  localProfile.expertise_areas,
+                  area,
+                  updateLocalProfile,
+                  'expertise_areas'
+                )}
+                className={`px-3 py-2 rounded-lg border transition-all capitalize ${
+                  localProfile.expertise_areas.includes(area)
+                    ? 'bg-rose-500 text-white border-rose-500'
+                    : 'bg-white text-gray-700 border-gray-300 hover:border-rose-300'
+                }`}
+              >
+                {area.replace('-', ' ')}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Location & Pricing</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Home City</label>
+              <input
+                type="text"
+                value={localProfile.home_city}
+                onChange={(e) => updateLocalProfile({ home_city: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Home Country</label>
+              <input
+                type="text"
+                value={localProfile.home_country}
+                onChange={(e) => updateLocalProfile({ home_country: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Travel Radius (km)</label>
+              <input
+                type="number"
+                min="0"
+                max="500"
+                value={localProfile.travel_radius_km}
+                onChange={(e) => updateLocalProfile({ travel_radius_km: parseInt(e.target.value) || 0 })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Max Group Size</label>
+              <input
+                type="number"
+                min="1"
+                max="20"
+                value={localProfile.max_group_size}
+                onChange={(e) => updateLocalProfile({ max_group_size: parseInt(e.target.value) || 1 })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Hourly Rate</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={localProfile.base_hourly_rate || ''}
+                onChange={(e) => updateLocalProfile({ base_hourly_rate: parseFloat(e.target.value) || undefined })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+              <select
+                value={localProfile.currency}
+                onChange={(e) => updateLocalProfile({ currency: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              >
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="GBP">GBP</option>
+                <option value="JPY">JPY</option>
+                <option value="CAD">CAD</option>
+                <option value="AUD">AUD</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-4">Additional Information</h3>
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Why did you become a local guide?</label>
+              <textarea
+                value={localProfile.why_local_guide || ''}
+                onChange={(e) => updateLocalProfile({ why_local_guide: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                maxLength={1000}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Services You Offer</label>
+              <textarea
+                value={localProfile.services_offered || ''}
+                onChange={(e) => updateLocalProfile({ services_offered: e.target.value })}
+                rows={3}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent resize-none"
+                maxLength={1000}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Fun Fact</label>
+              <input
+                type="text"
+                value={localProfile.fun_fact || ''}
+                onChange={(e) => updateLocalProfile({ fun_fact: e.target.value })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                maxLength={500}
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Instagram Handle</label>
+                <input
+                  type="text"
+                  value={localProfile.instagram_handle || ''}
+                  onChange={(e) => updateLocalProfile({ instagram_handle: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                  placeholder="@yourusername"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Website URL</label>
+                <input
+                  type="url"
+                  value={localProfile.website_url || ''}
+                  onChange={(e) => updateLocalProfile({ website_url: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                  placeholder="https://yourwebsite.com"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  if (!user) {
+    return null;
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-orange-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-rose-50 via-white to-orange-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Edit Profile</h1>
+            <p className="text-gray-600">Update your information and preferences</p>
+          </div>
+
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Tab navigation */}
+            <div className="border-b border-gray-200">
+              <nav className="flex space-x-8 px-8">
+                <button
+                  onClick={() => setActiveTab('profile')}
+                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'profile'
+                      ? 'border-rose-500 text-rose-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  User Profile
+                </button>
+                
+                {isLocal && (
+                  <button
+                    onClick={() => setActiveTab('local')}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === 'local'
+                        ? 'border-rose-500 text-rose-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Local Guide Profile
+                  </button>
+                )}
+              </nav>
+            </div>
+
+            {/* Tab content */}
+            <div className="p-8">
+              {activeTab === 'profile' && renderUserProfile()}
+              {activeTab === 'local' && renderLocalProfile()}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

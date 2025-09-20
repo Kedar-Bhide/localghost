@@ -1,3 +1,43 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  html {
+    font-family: Inter, system-ui, sans-serif;
+  }
+  
+  body {
+    @apply text-neutral-900 bg-white antialiased;
+  }
+}
+
+@layer components {
+  .container-mobile {
+    @apply px-4;
+  }
+  
+  .container-tablet {
+    @apply max-w-2xl px-6 mx-auto;
+  }
+  
+  .container-desktop {
+    @apply max-w-6xl px-8 mx-auto;
+  }
+  
+  .btn-primary {
+    @apply bg-primary text-white font-semibold py-3 px-6 rounded-2xl min-h-tap-target min-w-tap-target shadow-airbnb hover:bg-primary-hover hover:shadow-airbnb-hover transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-neutral-900 font-semibold py-3 px-6 rounded-2xl min-h-tap-target min-w-tap-target border border-neutral-200 shadow-airbnb hover:shadow-airbnb-hover transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 text-body border border-neutral-200 rounded-2xl bg-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+  }
+  
+  .card-airbnb {
+    @apply bg-white rounded-2xl shadow-airbnb hover:shadow-airbnb-hover transition-all duration-200;
+  }
+}

@@ -48,18 +48,7 @@ async def root():
 async def health_check():
     return {"status": "healthy", "service": "LocalGhost API"}
 
-# API v1 router
-from fastapi import APIRouter
+# Include API routes
+from app.api.v1.router import api_router
 
-api_v1_router = APIRouter(prefix="/api/v1")
-
-@api_v1_router.get("/")
-async def api_root():
-    return {"message": "LocalGhost API v1", "status": "ready"}
-
-@api_v1_router.get("/health")
-async def api_health_check():
-    return {"status": "healthy", "service": "LocalGhost API v1", "version": "1.0.0"}
-
-# Include the API router
-app.include_router(api_v1_router)
+app.include_router(api_router, prefix="/api/v1")
