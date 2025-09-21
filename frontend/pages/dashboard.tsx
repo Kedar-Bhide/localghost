@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 import { useRouter } from 'next/router';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
 
 function DashboardContent() {
   const { user, logout, refreshUser } = useAuth();
