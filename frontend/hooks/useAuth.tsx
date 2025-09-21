@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, createContext, ReactNode, useCallback } from 'react';
-import { User, AuthAPI, TokenManager } from '../lib/auth';
-import { ApiError } from '../lib/api';
+import { User, AuthAPI, TokenManager } from '@/lib/auth';
+import { ApiError } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
