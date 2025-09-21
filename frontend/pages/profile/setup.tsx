@@ -1,8 +1,92 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
-import { profileApi, UserProfileUpdate, LocalProfileCreate, EXPERTISE_AREAS, COMMON_LANGUAGES, TRAVEL_STYLES } from '../../lib/profileApi';
 import toast from 'react-hot-toast';
+
+// ===== INLINED PROFILE TYPES & CONSTANTS =====
+interface UserProfileUpdate {
+  full_name?: string;
+  bio?: string;
+  phone_number?: string;
+  nationality?: string;
+  languages_spoken?: string[];
+  interests?: string[];
+  travel_style?: string;
+  profile_picture_url?: string;
+  profile_visibility?: 'public' | 'friends' | 'private';
+  show_age?: boolean;
+  show_location?: boolean;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  onboarding_completed?: boolean;
+}
+
+interface LocalProfileCreate {
+  title: string;
+  description: string;
+  expertise_areas: string[];
+  languages?: string[];
+  max_group_size?: number;
+  base_hourly_rate?: number;
+  currency?: string;
+  home_city: string;
+  home_country: string;
+  travel_radius_km?: number;
+  services_offered?: string;
+  fun_fact?: string;
+  why_local_guide?: string;
+  instagram_handle?: string;
+  website_url?: string;
+}
+
+// Constants
+const EXPERTISE_AREAS = [
+  'food', 'art', 'history', 'culture', 'nightlife', 'shopping',
+  'nature', 'architecture', 'music', 'photography', 'adventure',
+  'family-friendly', 'luxury', 'budget', 'hidden-gems', 'local-life'
+];
+
+const COMMON_LANGUAGES = [
+  'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese',
+  'Mandarin', 'Japanese', 'Korean', 'Arabic', 'Russian', 'Dutch',
+  'Hindi', 'Turkish', 'Greek', 'Polish', 'Swedish', 'Danish', 'Norwegian'
+];
+
+const TRAVEL_STYLES = [
+  'Luxury', 'Budget', 'Adventure', 'Cultural', 'Relaxed', 'Family',
+  'Solo', 'Business', 'Backpacker', 'Foodie', 'Photography', 'Nature'
+];
+
+// Simple API functions
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+async function updateMyProfile(data: UserProfileUpdate): Promise<any> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const response = await fetch(`${API_BASE_URL}/users/me`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to update profile');
+  return response.json();
+}
+
+async function createLocalProfile(data: LocalProfileCreate): Promise<any> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const response = await fetch(`${API_BASE_URL}/locals/profile`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error('Failed to create local profile');
+  return response.json();
+}
 
 interface FormData {
   // Basic user profile
@@ -154,7 +238,7 @@ export default function ProfileSetup() {
         onboarding_completed: true,
       };
 
-      await profileApi.updateMyProfile(userProfileData);
+      await updateMyProfile(userProfileData);
 
       // Create local profile if user is a local guide
       if (isLocal) {
@@ -176,7 +260,7 @@ export default function ProfileSetup() {
           website_url: formData.website_url,
         };
 
-        await profileApi.createLocalProfile(localProfileData);
+        await createLocalProfile(localProfileData);
       }
 
       toast.success('Profile setup completed successfully!');

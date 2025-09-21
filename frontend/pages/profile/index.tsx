@@ -1,8 +1,90 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
-import { profileApi, UserProfileResponse, LocalProfileResponse } from '../../lib/profileApi';
 import toast from 'react-hot-toast';
+
+// ===== INLINED PROFILE TYPES =====
+interface UserProfileResponse {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  bio?: string;
+  phone_number?: string;
+  nationality?: string;
+  languages_spoken?: string[];
+  interests?: string[];
+  travel_style?: string;
+  profile_picture_url?: string;
+  profile_visibility: string;
+  show_age: boolean;
+  show_location: boolean;
+  is_email_verified: boolean;
+  is_phone_verified: boolean;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  onboarding_completed: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+interface LocalProfileResponse {
+  id: string;
+  user_id: string;
+  title: string;
+  description: string;
+  expertise_areas: string[];
+  languages: string[];
+  is_available: boolean;
+  max_group_size: number;
+  response_time_hours: number;
+  is_verified: boolean;
+  background_check_status: string;
+  base_hourly_rate?: number;
+  currency: string;
+  services_offered?: string;
+  home_city: string;
+  home_country: string;
+  travel_radius_km: number;
+  total_bookings: number;
+  average_rating: number;
+  response_rate_percent: number;
+  fun_fact?: string;
+  why_local_guide?: string;
+  instagram_handle?: string;
+  website_url?: string;
+  created_at: string;
+  updated_at?: string;
+  user?: UserProfileResponse;
+}
+
+// Simple API functions using the auth API client from useAuth
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+
+async function getMyProfile(): Promise<UserProfileResponse> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const response = await fetch(`${API_BASE_URL}/users/me`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to get profile');
+  return response.json();
+}
+
+async function getMyLocalProfile(): Promise<LocalProfileResponse> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  const response = await fetch(`${API_BASE_URL}/locals/profile/me`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  if (!response.ok) throw new Error('Failed to get local profile');
+  return response.json();
+}
 
 export default function ProfileView() {
   const { user } = useAuth();
@@ -26,13 +108,13 @@ export default function ProfileView() {
     setLoading(true);
     try {
       // Load user profile
-      const userProfileData = await profileApi.getMyProfile();
+      const userProfileData = await getMyProfile();
       setUserProfile(userProfileData);
 
       // Load local profile if user is a local guide
       if (isLocal) {
         try {
-          const localProfileData = await profileApi.getMyLocalProfile();
+          const localProfileData = await getMyLocalProfile();
           setLocalProfile(localProfileData);
         } catch (error: any) {
           if (error.statusCode !== 404) {
