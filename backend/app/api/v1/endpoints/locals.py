@@ -189,7 +189,9 @@ async def get_local_profile(
     try:
         stmt = (
             select(LocalProfile)
-            .options(selectinload(LocalProfile.user))
+            .options(
+                selectinload(LocalProfile.user).selectinload(User.locations)
+            )
             .where(LocalProfile.id == local_id)
         )
         result = await db.execute(stmt)

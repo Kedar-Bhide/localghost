@@ -7,6 +7,7 @@ export function Navbar() {
 
   const navigation = [
     { name: 'Home', href: '/', icon: '🏠' },
+    { name: 'Browse', href: '/browse', icon: '👀' },
     { name: 'Search', href: '/search', icon: '🔍' },
     { name: 'Messages', href: '/messages', icon: '💬' },
     { name: 'Profile', href: '/profile', icon: '👤' },
