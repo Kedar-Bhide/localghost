@@ -6,8 +6,9 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
 from app.models.user import User
 from app.models.local_profile import LocalProfile
+from app.models.user_location import UserLocation
 from app.schemas.profile import LocalProfileCreate, LocalProfileUpdate, LocalProfileResponse
-from typing import List
+from typing import List, Optional
 import uuid
 
 router = APIRouter()
@@ -219,60 +220,89 @@ async def get_local_profile(
 
 @router.get("/", response_model=List[LocalProfileResponse])
 async def search_local_guides(
-    q: str = None,
-    city: str = None,
-    country: str = None,
-    expertise: str = None,
+    q: Optional[str] = None,
+    city: Optional[str] = None,
+    country: Optional[str] = None,
+    expertise: Optional[str] = None,
     available_only: bool = True,
     verified_only: bool = False,
+    min_rating: Optional[float] = None,
+    max_distance_km: Optional[float] = None,
+    latitude: Optional[float] = None,
+    longitude: Optional[float] = None,
     limit: int = 20,
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    """Search for local guides with optional filters."""
+    """Search for local guides with advanced filtering options."""
     try:
-        # Build base query with user relationship
+        # Build base query with user and location relationships
         stmt = (
             select(LocalProfile)
-            .options(selectinload(LocalProfile.user))
+            .options(
+                selectinload(LocalProfile.user).selectinload(User.locations)
+            )
             .join(User, LocalProfile.user_id == User.id)
             .where(User.is_active == True)
         )
-        
-        # Apply filters
+
+        # Apply availability filter
         if available_only:
-            # Use existing database field
             stmt = stmt.where(LocalProfile.availability_status == 'available')
-            
+
+        # Apply verification filter
         if verified_only:
             stmt = stmt.where(LocalProfile.is_verified == True)
-            
+
+        # Apply expertise filter
         if expertise:
-            # Search in specialties array (existing field)
             stmt = stmt.where(LocalProfile.specialties.contains([expertise]))
-            
-        if city:
-            # We need to add city filtering - for now skip this filter
-            pass
-            
-        if country:
-            # We need to add country filtering - for now skip this filter  
-            pass
-            
+
+        # Apply rating filter
+        if min_rating is not None:
+            stmt = stmt.where(LocalProfile.average_rating >= min_rating)
+
+        # Apply location filters using UserLocation table
+        if city or country:
+            stmt = stmt.join(UserLocation, User.id == UserLocation.user_id)
+
+            if city:
+                stmt = stmt.where(UserLocation.city.ilike(f"%{city}%"))
+
+            if country:
+                stmt = stmt.where(UserLocation.country.ilike(f"%{country}%"))
+
+        # Apply text search
         if q:
-            # Simple text search (would need full-text search for production)
             search_term = f"%{q}%"
-            stmt = stmt.where(User.full_name.ilike(search_term))
-        
+            stmt = stmt.where(
+                User.full_name.ilike(search_term) |
+                User.bio.ilike(search_term)
+            )
+
+        # Apply distance filter (basic implementation)
+        # Note: For production, use PostGIS for proper geographical distance calculations
+        if max_distance_km and latitude and longitude:
+            stmt = stmt.join(UserLocation, User.id == UserLocation.user_id)
+            # Simple bounding box filter (approximate)
+            lat_delta = max_distance_km / 111.0  # Rough km to degrees conversion
+            lng_delta = lat_delta / abs(1.0 if latitude == 0 else latitude / abs(latitude))
+
+            stmt = stmt.where(
+                UserLocation.latitude.between(latitude - lat_delta, latitude + lat_delta)
+            ).where(
+                UserLocation.longitude.between(longitude - lng_delta, longitude + lng_delta)
+            )
+
         # Apply pagination
         stmt = stmt.limit(limit).offset(offset)
-        
+
         result = await db.execute(stmt)
         profiles = result.scalars().all()
-        
+
         return [LocalProfileResponse.from_orm(profile) for profile in profiles]
-        
+
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

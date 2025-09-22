@@ -34,8 +34,13 @@ export default function Home() {
                   Get Started
                 </Button>
               </Link>
-              <Link href="/login">
+              <Link href="/search">
                 <Button variant="secondary" size="lg" className="bg-transparent border-2 border-white text-white hover:bg-white/10">
+                  Find Local Guides
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="ghost" size="lg" className="text-white hover:bg-white/10">
                   Sign In
                 </Button>
               </Link>
