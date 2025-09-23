@@ -69,7 +69,7 @@ async function browseLocalGuides(limit = 20, offset = 0): Promise<LocalGuide[]> 
 }
 
 export default function BrowsePage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const [guides, setGuides] = useState<LocalGuide[]>([]);
@@ -81,13 +81,15 @@ export default function BrowsePage() {
   const guidesPerPage = 12;
 
   useEffect(() => {
+    if (isLoading) return; // Wait for auth check to complete
+
     if (!user) {
       router.push('/login');
       return;
     }
 
     loadGuides();
-  }, [user, router]);
+  }, [user, router, isLoading]);
 
   const loadGuides = async (page = 1) => {
     setLoading(true);
@@ -117,6 +119,18 @@ export default function BrowsePage() {
       loadGuides(currentPage + 1);
     }
   };
+
+  // Show loading while authentication is being checked
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) return null;
 

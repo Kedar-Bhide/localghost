@@ -108,7 +108,7 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function SearchPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   // Search state
@@ -145,15 +145,15 @@ export default function SearchPage() {
 
   // Effect for real-time search
   useEffect(() => {
-    if (user && (debouncedQuery || hasSearched)) {
+    if (!isLoading && user && (debouncedQuery || hasSearched)) {
       const searchFilters = { ...filters, q: debouncedQuery || undefined };
       performSearch(searchFilters);
     }
-  }, [debouncedQuery, filters, performSearch, user, hasSearched]);
+  }, [debouncedQuery, filters, performSearch, user, hasSearched, isLoading]);
 
   // Initialize search from URL params
   useEffect(() => {
-    if (router.isReady && user) {
+    if (!isLoading && router.isReady && user) {
       const { q, city, country, expertise } = router.query;
       if (q || city || country || expertise) {
         setSearchQuery((q as string) || '');
@@ -165,7 +165,7 @@ export default function SearchPage() {
         }));
       }
     }
-  }, [router.isReady, router.query, user]);
+  }, [router.isReady, router.query, user, isLoading]);
 
   // Filter handlers
   const handleFilterChange = (key: keyof SearchFilters, value: any) => {
@@ -179,6 +179,18 @@ export default function SearchPage() {
     });
     setSearchQuery('');
   };
+
+  // Show loading while authentication is being checked
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-neutral-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Redirect if not authenticated
   if (!user) {
