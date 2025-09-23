@@ -29,6 +29,12 @@ class User(Base):
     
     # Relationships
     local_profile = relationship("LocalProfile", back_populates="user", uselist=False, lazy="select")
+    locations = relationship("UserLocation", back_populates="user", lazy="select")
+
+    # Conversation relationships
+    traveler_conversations = relationship("Conversation", foreign_keys="Conversation.traveler_id", back_populates="traveler", lazy="dynamic")
+    local_conversations = relationship("Conversation", foreign_keys="Conversation.local_id", back_populates="local", lazy="dynamic")
+    sent_messages = relationship("Message", back_populates="sender", lazy="dynamic")
 
     def __repr__(self):
         return f"<User {self.email}>"

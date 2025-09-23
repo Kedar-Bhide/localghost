@@ -168,9 +168,48 @@ export default function GuideProfilePage() {
     }
   };
 
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [messageContent, setMessageContent] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+
   const handleContact = () => {
-    // TODO: Implement contact functionality (Phase 3)
-    alert('Contact functionality will be available in Phase 3!');
+    setShowMessageModal(true);
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageContent.trim() || sendingMessage) return;
+
+    setSendingMessage(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const response = await fetch(`${API_BASE_URL}/chats/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          local_id: profile.id,
+          initial_message: messageContent.trim()
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to start conversation');
+      }
+
+      const conversation = await response.json();
+      setShowMessageModal(false);
+      setMessageContent('');
+
+      // Redirect to messages page
+      router.push('/messages');
+    } catch (error) {
+      console.error('Failed to start conversation:', error);
+      alert('Failed to start conversation. Please try again.');
+    } finally {
+      setSendingMessage(false);
+    }
   };
 
   if (!user) return null;
@@ -417,7 +456,7 @@ export default function GuideProfilePage() {
                   className="btn-primary w-full mb-3"
                   disabled={!profile.is_available}
                 >
-                  {profile.is_available ? 'Contact Guide' : 'Currently Unavailable'}
+                  {profile.is_available ? 'Send Message' : 'Currently Unavailable'}
                 </button>
 
                 <p className="text-sm text-neutral-600">
@@ -516,6 +555,46 @@ export default function GuideProfilePage() {
           </div>
         </div>
       </main>
+
+      {/* Message Modal */}
+      {showMessageModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-neutral-900 mb-4">
+              Send Message to {profile.user?.full_name}
+            </h3>
+
+            <textarea
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+              placeholder="Hi! I'm interested in connecting with you as a local guide..."
+              className="w-full p-3 border border-neutral-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              rows={4}
+              disabled={sendingMessage}
+            />
+
+            <div className="flex justify-end space-x-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowMessageModal(false);
+                  setMessageContent('');
+                }}
+                className="px-4 py-2 text-neutral-600 hover:text-neutral-800 transition-colors"
+                disabled={sendingMessage}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendMessage}
+                disabled={!messageContent.trim() || sendingMessage}
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {sendingMessage ? 'Sending...' : 'Send Message'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
