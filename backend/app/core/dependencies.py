@@ -82,3 +82,28 @@ async def get_current_local_user(current_user: User = Depends(get_current_active
             detail="Access forbidden: Local role required"
         )
     return current_user
+
+async def get_current_user_websocket(token: str, db: AsyncSession) -> Optional[User]:
+    """
+    WebSocket-compatible user authentication.
+    """
+    try:
+        # Verify token
+        payload = verify_token(token)
+        if payload is None:
+            return None
+
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            return None
+
+        # Get user from database
+        user = await AuthService.get_user_by_id(db, user_id)
+
+        # Check if user is active
+        if not user.is_active:
+            return None
+
+        return user
+    except Exception:
+        return None

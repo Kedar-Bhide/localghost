@@ -177,7 +177,7 @@ export default function GuideProfilePage() {
   };
 
   const handleSendMessage = async () => {
-    if (!messageContent.trim() || sendingMessage) return;
+    if (!messageContent.trim() || sendingMessage || !profile) return;
 
     setSendingMessage(true);
     try {
