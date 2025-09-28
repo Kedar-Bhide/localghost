@@ -18,13 +18,13 @@ class ItineraryRequestCreate(BaseModel):
     budget_max: Optional[float] = Field(None, ge=0)
     currency: str = Field("USD", min_length=3, max_length=3)
     interests: Optional[List[str]] = []
-    activity_level: Optional[str] = Field(None, regex="^(low|moderate|high)$")
+    activity_level: Optional[str] = Field(None, pattern="^(low|moderate|high)$")
     accommodation_preference: Optional[str] = Field(None, max_length=100)
     transportation_preference: Optional[str] = Field(None, max_length=100)
     dietary_restrictions: Optional[List[str]] = []
     special_requirements: Optional[str] = Field(None, max_length=1000)
     is_public: bool = True
-    urgency_level: Optional[str] = Field(None, regex="^(low|medium|high)$")
+    urgency_level: Optional[str] = Field(None, pattern="^(low|medium|high)$")
 
     @validator('end_date')
     def end_date_after_start_date(cls, v, values):
