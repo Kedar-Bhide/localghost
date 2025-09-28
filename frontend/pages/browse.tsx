@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { useAuth } from '../hooks/useAuth';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
 
 // ===== INLINED TYPES AND API =====
 interface LocalGuide {
@@ -68,8 +68,11 @@ async function browseLocalGuides(limit = 20, offset = 0): Promise<LocalGuide[]> 
   return response.json();
 }
 
-export default function BrowsePage() {
-  const { user, isLoading } = useAuth();
+interface BrowsePageContentProps {
+  user: any;
+}
+
+function BrowsePageContent({ user }: BrowsePageContentProps) {
   const router = useRouter();
 
   const [guides, setGuides] = useState<LocalGuide[]>([]);
@@ -81,15 +84,10 @@ export default function BrowsePage() {
   const guidesPerPage = 12;
 
   useEffect(() => {
-    if (isLoading) return; // Wait for auth check to complete
-
-    if (!user) {
-      router.push('/login');
-      return;
+    if (user) {
+      loadGuides();
     }
-
-    loadGuides();
-  }, [user, router, isLoading]);
+  }, [user]);
 
   const loadGuides = async (page = 1) => {
     setLoading(true);
@@ -120,19 +118,7 @@ export default function BrowsePage() {
     }
   };
 
-  // Show loading while authentication is being checked
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-neutral-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) return null;
+  // User is guaranteed to exist since we're inside ProtectedRoute
 
   return (
     <div className="min-h-screen bg-white">
@@ -363,8 +349,10 @@ export default function BrowsePage() {
   );
 }
 
-export async function getServerSideProps() {
-  return {
-    props: {},
-  };
+export default function BrowsePage() {
+  return (
+    <ProtectedRoute redirectTo="/auth/login">
+      {(user) => <BrowsePageContent user={user} />}
+    </ProtectedRoute>
+  );
 }

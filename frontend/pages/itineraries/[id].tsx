@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useAuth } from '../../hooks/useAuth';
 import ProtectedRoute from '../../components/auth/ProtectedRoute';
 
 interface DailyActivity {
@@ -56,10 +55,13 @@ interface ItineraryRequest {
   updated_at: string;
 }
 
-function ItineraryRequestDetailContent() {
+interface ItineraryRequestDetailContentProps {
+  user: any;
+}
+
+function ItineraryRequestDetailContent({ user }: ItineraryRequestDetailContentProps) {
   const router = useRouter();
   const { id } = router.query;
-  const { user, isLoading: authLoading } = useAuth();
   const [request, setRequest] = useState<ItineraryRequest | null>(null);
   const [proposals, setProposals] = useState<ItineraryProposal[]>([]);
   const [loading, setLoading] = useState(true);
@@ -538,7 +540,7 @@ function ItineraryRequestDetailContent() {
 export default function ItineraryRequestDetail() {
   return (
     <ProtectedRoute redirectTo="/auth/login">
-      <ItineraryRequestDetailContent />
+      {(user) => <ItineraryRequestDetailContent user={user} />}
     </ProtectedRoute>
   );
 }

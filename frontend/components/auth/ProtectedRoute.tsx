@@ -3,19 +3,20 @@ import { useRouter } from 'next/router';
 import { useEffect, ReactNode } from 'react';
 
 interface ProtectedRouteProps {
-  children: ReactNode;
+  children: ReactNode | ((user: any, authContext?: any) => ReactNode);
   redirectTo?: string;
   requireRole?: 'traveler' | 'local';
   showLoadingPage?: boolean;
 }
 
-export default function ProtectedRoute({ 
-  children, 
+export default function ProtectedRoute({
+  children,
   redirectTo = '/',
   requireRole,
   showLoadingPage = true
 }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const authContext = useAuth();
+  const { isAuthenticated, isLoading, user } = authContext;
   const router = useRouter();
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export default function ProtectedRoute({
     return null;
   }
 
-  return <>{children}</>;
+  return <>{typeof children === 'function' ? children(user, authContext) : children}</>;
 }
 
 // Higher-order component for easier use

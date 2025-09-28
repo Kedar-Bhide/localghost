@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
 import { useRouter } from 'next/router';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 
-function DashboardContent() {
-  const { user, logout, refreshUser } = useAuth();
+interface DashboardContentProps {
+  user: any;
+  logout: () => Promise<void>;
+}
+
+function DashboardContent({ user, logout }: DashboardContentProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -247,13 +250,7 @@ function DashboardContent() {
 export default function Dashboard() {
   return (
     <ProtectedRoute redirectTo="/login">
-      <DashboardContent />
+      {(user, authContext) => <DashboardContent user={user} logout={authContext.logout} />}
     </ProtectedRoute>
   );
-}
-
-export async function getServerSideProps() {
-  return {
-    props: {},
-  };
 }

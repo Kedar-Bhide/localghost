@@ -9,7 +9,7 @@ from app.models.itinerary_request import ItineraryRequest, ItineraryRequestStatu
 from app.models.itinerary_proposal import ItineraryProposal, ProposalStatus
 from app.schemas.itinerary import (
     ItineraryProposalCreate, ItineraryProposalUpdate, ItineraryProposalResponse,
-    ItineraryProposalStatusUpdate
+    ItineraryProposalStatusUpdate, ItineraryProposalListResponse, ItineraryRequestListResponse
 )
 from uuid import UUID
 from datetime import datetime

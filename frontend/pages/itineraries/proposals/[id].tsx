@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useAuth } from '../../../hooks/useAuth';
 import DeliveryWorkflow from '../../../components/DeliveryWorkflow';
 import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
@@ -45,10 +44,13 @@ interface ItineraryProposal {
   reviewed_at?: string;
 }
 
-function ProposalDetailContent() {
+interface ProposalDetailContentProps {
+  user: any;
+}
+
+function ProposalDetailContent({ user }: ProposalDetailContentProps) {
   const router = useRouter();
   const { id } = router.query;
-  const { user, isLoading: authLoading } = useAuth();
   const [proposal, setProposal] = useState<ItineraryProposal | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -549,7 +551,7 @@ function ProposalDetailContent() {
 export default function ProposalDetail() {
   return (
     <ProtectedRoute redirectTo="/auth/login">
-      <ProposalDetailContent />
+      {(user) => <ProposalDetailContent user={user} />}
     </ProtectedRoute>
   );
 }
