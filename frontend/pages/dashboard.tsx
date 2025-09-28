@@ -254,3 +254,10 @@ export default function Dashboard() {
     </ProtectedRoute>
   );
 }
+
+// Force server-side rendering to avoid static generation
+export async function getServerSideProps() {
+  return {
+    props: {},
+  };
+}
