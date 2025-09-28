@@ -51,13 +51,13 @@ class ItineraryRequestUpdate(BaseModel):
     budget_max: Optional[float] = Field(None, ge=0)
     currency: Optional[str] = Field(None, min_length=3, max_length=3)
     interests: Optional[List[str]] = None
-    activity_level: Optional[str] = Field(None, regex="^(low|moderate|high)$")
+    activity_level: Optional[str] = Field(None, pattern="^(low|moderate|high)$")
     accommodation_preference: Optional[str] = Field(None, max_length=100)
     transportation_preference: Optional[str] = Field(None, max_length=100)
     dietary_restrictions: Optional[List[str]] = None
     special_requirements: Optional[str] = Field(None, max_length=1000)
     is_public: Optional[bool] = None
-    urgency_level: Optional[str] = Field(None, regex="^(low|medium|high)$")
+    urgency_level: Optional[str] = Field(None, pattern="^(low|medium|high)$")
 
 class ItineraryRequestResponse(BaseModel):
     id: UUID
