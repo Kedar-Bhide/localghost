@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useAuth } from '../../../hooks/useAuth';
 import DeliveryWorkflow from '../../../components/DeliveryWorkflow';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 interface DailyActivity {
   time: string;
@@ -44,7 +45,7 @@ interface ItineraryProposal {
   reviewed_at?: string;
 }
 
-export default function ProposalDetail() {
+function ProposalDetailContent() {
   const router = useRouter();
   const { id } = router.query;
   const { user, isLoading: authLoading } = useAuth();
@@ -54,15 +55,10 @@ export default function ProposalDetail() {
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth/login');
-      return;
-    }
-
     if (id && user) {
       fetchProposalDetails();
     }
-  }, [id, user, authLoading]);
+  }, [id, user]);
 
   const fetchProposalDetails = async () => {
     try {
@@ -151,7 +147,7 @@ export default function ProposalDetail() {
     return proposal.price_breakdown.reduce((total, item) => total + item.amount, 0);
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -547,5 +543,13 @@ export default function ProposalDetail() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function ProposalDetail() {
+  return (
+    <ProtectedRoute redirectTo="/auth/login">
+      <ProposalDetailContent />
+    </ProtectedRoute>
   );
 }

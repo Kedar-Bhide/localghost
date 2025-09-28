@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useAuth } from '../../hooks/useAuth';
+import ProtectedRoute from '../../components/auth/ProtectedRoute';
 
 interface DailyActivity {
   time: string;
@@ -55,7 +56,7 @@ interface ItineraryRequest {
   updated_at: string;
 }
 
-export default function ItineraryRequestDetail() {
+function ItineraryRequestDetailContent() {
   const router = useRouter();
   const { id } = router.query;
   const { user, isLoading: authLoading } = useAuth();
@@ -66,16 +67,11 @@ export default function ItineraryRequestDetail() {
   const [selectedTab, setSelectedTab] = useState<'details' | 'proposals'>('details');
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/auth/login');
-      return;
-    }
-
     if (id && user) {
       fetchRequestDetails();
       fetchProposals();
     }
-  }, [id, user, authLoading]);
+  }, [id, user]);
 
   const fetchRequestDetails = async () => {
     try {
@@ -193,7 +189,7 @@ export default function ItineraryRequestDetail() {
     return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -536,5 +532,13 @@ export default function ItineraryRequestDetail() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function ItineraryRequestDetail() {
+  return (
+    <ProtectedRoute redirectTo="/auth/login">
+      <ItineraryRequestDetailContent />
+    </ProtectedRoute>
   );
 }

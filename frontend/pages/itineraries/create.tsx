@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../../hooks/useAuth';
+import ProtectedRoute from '../../components/auth/ProtectedRoute';
 
 // ===== INLINED TYPES AND API =====
 interface ItineraryRequestCreate {
@@ -48,7 +49,7 @@ async function createItineraryRequest(data: ItineraryRequestCreate) {
   return response.json();
 }
 
-export default function CreateItineraryPage() {
+function CreateItineraryPageContent() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
@@ -652,6 +653,14 @@ export default function CreateItineraryPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function CreateItineraryPage() {
+  return (
+    <ProtectedRoute redirectTo="/auth/login">
+      <CreateItineraryPageContent />
+    </ProtectedRoute>
   );
 }
 

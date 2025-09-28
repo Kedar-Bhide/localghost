@@ -23,6 +23,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  // Export path mapping to exclude problematic pages
+  trailingSlash: false,
   webpack: (config, { isServer }) => {
     // Ensure proper module resolution for lib directory
     config.resolve.alias = {

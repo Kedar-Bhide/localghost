@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
 
 interface DeliveryStep {
   id: string;
@@ -29,7 +28,6 @@ export default function DeliveryWorkflow({
   isTraveler,
   onStatusUpdate
 }: DeliveryWorkflowProps) {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useAuth } from '../hooks/useAuth';
+import ProtectedRoute from '../components/auth/ProtectedRoute';
 
 interface ItineraryRequest {
   id: string;
@@ -46,7 +47,7 @@ interface DashboardStats {
   available_requests: number;
 }
 
-export default function LocalDashboard() {
+function LocalDashboardContent() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'available' | 'proposals'>('overview');
@@ -73,15 +74,10 @@ export default function LocalDashboard() {
   const [proposalStatusFilter, setProposalStatusFilter] = useState('');
 
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'local')) {
-      router.push('/auth/login');
-      return;
-    }
-
     if (user && user.role === 'local') {
       fetchDashboardData();
     }
-  }, [user, authLoading]);
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
@@ -217,7 +213,7 @@ export default function LocalDashboard() {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -689,6 +685,14 @@ export default function LocalDashboard() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function LocalDashboard() {
+  return (
+    <ProtectedRoute redirectTo="/auth/login" requireRole="local">
+      <LocalDashboardContent />
+    </ProtectedRoute>
   );
 }
 

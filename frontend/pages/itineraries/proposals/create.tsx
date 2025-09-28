@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import { useAuth } from '../../../hooks/useAuth';
+import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 interface DailyActivity {
   time: string;
@@ -44,7 +45,7 @@ interface ProposalFormData {
   cancellation_policy: string;
 }
 
-export default function CreateProposal() {
+function CreateProposalContent() {
   const router = useRouter();
   const { request_id } = router.query;
   const { user, isLoading: authLoading } = useAuth();
@@ -66,15 +67,10 @@ export default function CreateProposal() {
   });
 
   useEffect(() => {
-    if (!authLoading && (!user || user.role !== 'local')) {
-      router.push('/auth/login');
-      return;
-    }
-
     if (request_id && user) {
       fetchRequestDetails();
     }
-  }, [request_id, user, authLoading]);
+  }, [request_id, user]);
 
   useEffect(() => {
     if (request) {
@@ -263,7 +259,7 @@ export default function CreateProposal() {
     }
   };
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -695,4 +691,18 @@ export default function CreateProposal() {
       </div>
     </>
   );
+}
+
+export default function CreateProposal() {
+  return (
+    <ProtectedRoute redirectTo="/auth/login" requireRole="local">
+      <CreateProposalContent />
+    </ProtectedRoute>
+  );
+}
+
+export async function getServerSideProps() {
+  return {
+    props: {},
+  };
 }
