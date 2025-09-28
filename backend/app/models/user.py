@@ -36,6 +36,11 @@ class User(Base):
     local_conversations = relationship("Conversation", foreign_keys="Conversation.local_id", back_populates="local", lazy="dynamic")
     sent_messages = relationship("Message", back_populates="sender", lazy="dynamic")
 
+    # Itinerary relationships
+    itinerary_requests = relationship("ItineraryRequest", foreign_keys="ItineraryRequest.traveler_id", back_populates="traveler", lazy="dynamic")
+    assigned_itinerary_requests = relationship("ItineraryRequest", foreign_keys="ItineraryRequest.local_id", back_populates="local", lazy="dynamic")
+    itinerary_proposals = relationship("ItineraryProposal", back_populates="local", lazy="dynamic")
+
     def __repr__(self):
         return f"<User {self.email}>"
     
