@@ -13,6 +13,7 @@ from app.schemas.itinerary import (
 )
 from uuid import UUID
 from datetime import datetime
+from typing import Optional
 from app.core.notifications import NotificationService
 
 router = APIRouter()
