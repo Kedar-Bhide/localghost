@@ -3,6 +3,8 @@ import { useRouter } from 'next/router';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
 import AnalyticsDashboard from '../components/dashboard/AnalyticsDashboard';
 import NotificationBell from '../components/notifications/NotificationBell';
+import { PageLoadingSpinner, ErrorAlert } from '../components/ui';
+import { useErrorHandler } from '../hooks/useErrorHandler';
 
 interface DashboardContentProps {
   user: any;
@@ -12,6 +14,7 @@ interface DashboardContentProps {
 function DashboardContent({ user, logout }: DashboardContentProps) {
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const { error, isError, handleError, clearError } = useErrorHandler();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -19,16 +22,27 @@ function DashboardContent({ user, logout }: DashboardContentProps) {
       await logout();
       router.push('/');
     } catch (error) {
-      console.error('Logout failed:', error);
+      handleError(error);
     } finally {
       setIsLoggingOut(false);
     }
   };
 
   if (!user) {
+    return <PageLoadingSpinner text="Loading dashboard..." />;
+  }
+
+  if (isError && error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <ErrorAlert
+            title="Dashboard Error"
+            message={error.message}
+            details={error.details}
+            onDismiss={clearError}
+          />
+        </div>
       </div>
     );
   }

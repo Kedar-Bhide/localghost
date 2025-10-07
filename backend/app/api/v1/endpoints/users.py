@@ -3,9 +3,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from app.core.database import get_db
 from app.core.dependencies import get_current_active_user
+from app.core.caching import cache_manager, user_cache_key, cache_result, invalidate_cache_pattern
+from app.core.error_handlers import ResourceNotFoundException, ValidationException
 from app.models.user import User
 from app.schemas.profile import UserProfileUpdate, UserProfileResponse
 from typing import List
+import structlog
+
+logger = structlog.get_logger()
 
 router = APIRouter()
 
@@ -14,9 +19,23 @@ async def get_my_profile(
     current_user: User = Depends(get_current_active_user)
 ):
     """Get current user's profile information."""
-    return UserProfileResponse.from_orm(current_user)
+    # Check cache first
+    cache_key = user_cache_key(str(current_user.id))
+    cached_profile = await cache_manager.get(cache_key)
+    
+    if cached_profile:
+        logger.debug("User profile cache hit", user_id=current_user.id)
+        return UserProfileResponse(**cached_profile)
+    
+    # Cache miss - return from database and cache result
+    profile_data = UserProfileResponse.from_orm(current_user)
+    await cache_manager.set(cache_key, profile_data.dict(), expire=1800)  # 30 minutes
+    
+    logger.debug("User profile cache miss, cached", user_id=current_user.id)
+    return profile_data
 
 @router.put("/me", response_model=UserProfileResponse)
+@invalidate_cache_pattern("user:*")
 async def update_my_profile(
     profile_data: UserProfileUpdate,
     db: AsyncSession = Depends(get_db),
@@ -24,6 +43,10 @@ async def update_my_profile(
 ):
     """Update current user's profile information."""
     try:
+        # Validate input data
+        if not profile_data.dict(exclude_unset=True):
+            raise ValidationException("No data provided for update")
+        
         # Update user data - only update fields that exist in the database
         update_data = profile_data.dict(exclude_unset=True)
         
@@ -31,26 +54,33 @@ async def update_my_profile(
         allowed_fields = {'full_name', 'bio', 'profile_picture_url', 'onboarding_completed'}
         filtered_data = {k: v for k, v in update_data.items() if k in allowed_fields}
         
-        if filtered_data:
-            stmt = (
-                update(User)
-                .where(User.id == current_user.id)
-                .values(**filtered_data)
-                .returning(User)
-            )
-            result = await db.execute(stmt)
-            updated_user = result.scalar_one()
-            await db.commit()
-            
-            return UserProfileResponse.from_orm(updated_user)
+        if not filtered_data:
+            raise ValidationException("No valid fields provided for update")
         
-        return UserProfileResponse.from_orm(current_user)
+        stmt = (
+            update(User)
+            .where(User.id == current_user.id)
+            .values(**filtered_data)
+            .returning(User)
+        )
+        result = await db.execute(stmt)
+        updated_user = result.scalar_one()
+        await db.commit()
         
+        # Invalidate user cache
+        await cache_manager.delete(user_cache_key(str(current_user.id)))
+        
+        logger.info("User profile updated", user_id=current_user.id, updated_fields=list(filtered_data.keys()))
+        return UserProfileResponse.from_orm(updated_user)
+        
+    except ValidationException:
+        raise
     except Exception as e:
         await db.rollback()
+        logger.error("Error updating user profile", user_id=current_user.id, error=str(e), exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"An error occurred while updating profile: {str(e)}"
+            detail="An error occurred while updating profile"
         )
 
 @router.get("/{user_id}", response_model=UserProfileResponse)
