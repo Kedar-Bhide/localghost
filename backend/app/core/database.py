@@ -1,7 +1,6 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData, event
-from sqlalchemy.pool import QueuePool
 import asyncio
 import structlog
 from app.core.config import settings, get_database_config
@@ -14,7 +13,6 @@ db_config = get_database_config()
 # Create async engine with optimized settings
 engine = create_async_engine(
     db_config["url"],
-    poolclass=QueuePool,
     pool_size=db_config["pool_size"],
     max_overflow=db_config["max_overflow"],
     pool_timeout=db_config["pool_timeout"],
