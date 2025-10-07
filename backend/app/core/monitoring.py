@@ -168,8 +168,11 @@ class HealthChecker:
         
         # Check Redis cache
         try:
-            await cache_manager.ping()
-            health_status["checks"]["redis"] = {"status": "healthy"}
+            if await cache_manager.ping():
+                health_status["checks"]["redis"] = {"status": "healthy"}
+            else:
+                health_status["checks"]["redis"] = {"status": "unhealthy"}
+                health_status["status"] = "unhealthy"
         except Exception as e:
             health_status["checks"]["redis"] = {
                 "status": "unhealthy",

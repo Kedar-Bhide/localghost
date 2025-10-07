@@ -5,7 +5,7 @@ import json
 import asyncio
 from typing import Any, Optional, Union
 from datetime import timedelta
-import aioredis
+import redis.asyncio as redis
 from app.core.config import settings
 import structlog
 
@@ -15,19 +15,19 @@ class CacheManager:
     """Redis-based cache manager with connection pooling and error handling."""
     
     def __init__(self):
-        self.redis: Optional[aioredis.Redis] = None
-        self._connection_pool: Optional[aioredis.ConnectionPool] = None
+        self.redis: Optional[redis.Redis] = None
+        self._connection_pool: Optional[redis.ConnectionPool] = None
     
     async def connect(self):
         """Initialize Redis connection."""
         try:
             if not self.redis:
-                self._connection_pool = aioredis.ConnectionPool.from_url(
+                self._connection_pool = redis.ConnectionPool.from_url(
                     settings.REDIS_URL,
                     max_connections=20,
                     retry_on_timeout=True
                 )
-                self.redis = aioredis.Redis(connection_pool=self._connection_pool)
+                self.redis = redis.Redis(connection_pool=self._connection_pool)
                 
                 # Test connection
                 await self.redis.ping()

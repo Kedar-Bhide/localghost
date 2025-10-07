@@ -32,7 +32,6 @@ python-dateutil==2.8.2
 
 # Performance & Caching
 redis>=5.0.0
-aioredis>=2.0.1
 
 # Monitoring & Logging
 structlog>=23.2.0
