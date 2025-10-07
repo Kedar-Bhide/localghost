@@ -13,10 +13,37 @@ interface UseErrorHandlerReturn {
   isError: boolean;
   handleError: (error: any) => void;
   clearError: () => void;
-  handleAsyncError: <T>(asyncFn: () => Promise<T>) => Promise<T | null>;
+  handleAsyncError: (asyncFn: () => Promise<any>) => Promise<any | null>;
 }
 
-export function useErrorHandler(): UseErrorHandlerReturn {
+function getHttpErrorMessage(statusCode: number): string {
+  switch (statusCode) {
+    case 400:
+      return 'Bad request. Please check your input and try again.';
+    case 401:
+      return 'You are not authorized. Please log in and try again.';
+    case 403:
+      return 'You do not have permission to perform this action.';
+    case 404:
+      return 'The requested resource was not found.';
+    case 409:
+      return 'There was a conflict with the current state.';
+    case 422:
+      return 'The data you provided is invalid.';
+    case 429:
+      return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+      return 'Internal server error. Please try again later.';
+    case 502:
+      return 'Service temporarily unavailable. Please try again later.';
+    case 503:
+      return 'Service temporarily unavailable. Please try again later.';
+    default:
+      return 'An error occurred. Please try again.';
+  }
+}
+
+export function useErrorHandler() {
   const [error, setError] = useState<ErrorInfo | null>(null);
 
   const handleError = useCallback((error: any) => {
@@ -70,13 +97,11 @@ export function useErrorHandler(): UseErrorHandlerReturn {
     setError(null);
   }, []);
 
-  const handleAsyncError = useCallback(async <T>(asyncFn: () => Promise<T>): Promise<T | null> => {
-    try {
-      return await asyncFn();
-    } catch (error) {
+  const handleAsyncError = useCallback((asyncFn: () => Promise<any>) => {
+    return asyncFn().catch((error) => {
       handleError(error);
       return null;
-    }
+    });
   }, [handleError]);
 
   return {
@@ -86,33 +111,6 @@ export function useErrorHandler(): UseErrorHandlerReturn {
     clearError,
     handleAsyncError,
   };
-}
-
-function getHttpErrorMessage(statusCode: number): string {
-  switch (statusCode) {
-    case 400:
-      return 'Bad request. Please check your input and try again.';
-    case 401:
-      return 'You are not authorized. Please log in and try again.';
-    case 403:
-      return 'You do not have permission to perform this action.';
-    case 404:
-      return 'The requested resource was not found.';
-    case 409:
-      return 'There was a conflict with the current state.';
-    case 422:
-      return 'The data you provided is invalid.';
-    case 429:
-      return 'Too many requests. Please wait a moment and try again.';
-    case 500:
-      return 'Internal server error. Please try again later.';
-    case 502:
-      return 'Service temporarily unavailable. Please try again later.';
-    case 503:
-      return 'Service temporarily unavailable. Please try again later.';
-    default:
-      return 'An error occurred. Please try again.';
-  }
 }
 
 // Hook for handling form validation errors
