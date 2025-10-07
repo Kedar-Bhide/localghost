@@ -64,6 +64,7 @@ class ItineraryProposal(Base):
     # Relationships
     request = relationship("ItineraryRequest", back_populates="proposals")
     local = relationship("User", back_populates="itinerary_proposals")
+    reviews = relationship("Review", back_populates="proposal", lazy="dynamic")
 
     def __repr__(self):
         return f"<ItineraryProposal {self.id}: {self.title}>"

@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import DeliveryWorkflow from '../../../components/DeliveryWorkflow';
+import ReviewForm from '../../../components/reviews/ReviewForm';
+import ReviewCard from '../../../components/reviews/ReviewCard';
 import ProtectedRoute from '../../../components/auth/ProtectedRoute';
 
 interface DailyActivity {
@@ -55,10 +57,14 @@ function ProposalDetailContent({ user }: ProposalDetailContentProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [canReview, setCanReview] = useState<{ can_review: boolean; reason?: string; existing_review_id?: string } | null>(null);
+  const [reviews, setReviews] = useState<any[]>([]);
 
   useEffect(() => {
     if (id && user) {
       fetchProposalDetails();
+      checkReviewEligibility();
     }
   }, [id, user]);
 
@@ -125,6 +131,46 @@ function ProposalDetailContent({ user }: ProposalDetailContentProps) {
       style: 'currency',
       currency: 'USD'
     }).format(amount);
+  };
+
+  const checkReviewEligibility = async () => {
+    try {
+      const response = await fetch(`/api/v1/reviews/check-eligibility/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setCanReview(data);
+      }
+    } catch (err) {
+      console.error('Failed to check review eligibility:', err);
+    }
+  };
+
+  const handleSubmitReview = async (reviewData: any) => {
+    try {
+      const response = await fetch('/api/v1/reviews/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit review');
+      }
+
+      setShowReviewForm(false);
+      await checkReviewEligibility(); // Refresh eligibility
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      throw err;
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -528,6 +574,48 @@ function ProposalDetailContent({ user }: ProposalDetailContentProps) {
               </div>
             </div>
           </div>
+
+          {/* Review Section */}
+          {proposal && proposal.status === 'accepted' && (
+            <div className="mt-8">
+              {canReview?.can_review && !showReviewForm && (
+                <div className="bg-white shadow rounded-lg p-6 mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    Share Your Experience
+                  </h3>
+                  <p className="text-gray-600 mb-4">
+                    How was your experience? Leave a review to help other travelers.
+                  </p>
+                  <button
+                    onClick={() => setShowReviewForm(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    Write a Review
+                  </button>
+                </div>
+              )}
+
+              {showReviewForm && proposal && (
+                <div className="mb-6">
+                  <ReviewForm
+                    proposalId={proposal.id}
+                    proposalTitle={proposal.title}
+                    revieweeName={isLocalGuide ? 'the traveler' : proposal.local_name}
+                    onSubmit={handleSubmitReview}
+                    onCancel={() => setShowReviewForm(false)}
+                  />
+                </div>
+              )}
+
+              {canReview && !canReview.can_review && canReview.reason && (
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4 mb-6">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-medium">Reviews:</span> {canReview.reason}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Delivery Workflow */}
           <div className="mt-8">

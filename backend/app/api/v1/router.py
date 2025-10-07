@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, profile, users, locals, chats, chat_websocket, itineraries, itineraries_proposals
+from app.api.v1.endpoints import auth, profile, users, locals, chats, chat_websocket, itineraries, itineraries_proposals, reviews, notifications, analytics
 
 # Create the main API router for v1
 api_router = APIRouter()
@@ -26,11 +26,20 @@ api_router.include_router(chat_websocket.router, tags=["websocket"])
 api_router.include_router(itineraries.router, prefix="/itineraries", tags=["itineraries"])
 api_router.include_router(itineraries_proposals.router, prefix="/itineraries", tags=["itineraries"])
 
+# Include review routes
+api_router.include_router(reviews.router, prefix="/reviews", tags=["reviews"])
+
+# Include notification routes
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+
+# Include analytics routes
+api_router.include_router(analytics.router, prefix="/analytics", tags=["analytics"])
+
 @api_router.get("/")
 async def api_root():
     return {
         "message": "LocalGhost API v1",
         "status": "ready",
-        "endpoints": ["/auth", "/profile", "/users", "/locals", "/chats", "/itineraries"],
+        "endpoints": ["/auth", "/profile", "/users", "/locals", "/chats", "/itineraries", "/reviews", "/notifications", "/analytics"],
         "websockets": ["/ws/chats/{conversation_id}"]
     }

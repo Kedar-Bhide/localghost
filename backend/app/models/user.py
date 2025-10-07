@@ -41,6 +41,13 @@ class User(Base):
     assigned_itinerary_requests = relationship("ItineraryRequest", foreign_keys="ItineraryRequest.local_id", back_populates="local", lazy="dynamic")
     itinerary_proposals = relationship("ItineraryProposal", back_populates="local", lazy="dynamic")
 
+    # Review relationships
+    reviews_given = relationship("Review", foreign_keys="Review.reviewer_id", back_populates="reviewer", lazy="dynamic")
+    reviews_received = relationship("Review", foreign_keys="Review.reviewee_id", back_populates="reviewee", lazy="dynamic")
+
+    # Notification relationships
+    notifications = relationship("Notification", foreign_keys="Notification.user_id", back_populates="user", lazy="dynamic")
+
     def __repr__(self):
         return f"<User {self.email}>"
     
